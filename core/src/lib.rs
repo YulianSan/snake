@@ -36,7 +36,6 @@ struct Snake {
     direction: Direction,
     head_pos: (u32, u32),
     alive: bool,
-    i_body: usize,
     grow: bool,
 }
 
@@ -47,7 +46,6 @@ impl Snake {
             direction: Direction::Right,
             head_pos: (0, 0),
             alive: true,
-            i_body: 0,
             grow: false,
         }
     }
@@ -59,8 +57,8 @@ impl Snake {
             self.grow = false;
             self.body.push(self.head_pos);
         } else {
-            self.body[self.i_body] = self.head_pos;
-            self.i_body = (self.i_body + 1) % self.body.len();
+            self.body.remove(0);
+            self.body.push(self.head_pos);
         }
     }
 
@@ -143,11 +141,12 @@ impl Game {
 
     pub fn snake_collion_food(&mut self) {
         let food_amount = self.food.len();
+        let next_pos = self.snake.next_pos();
 
         self.food = self
             .food
             .iter()
-            .filter(|f| f.pos != self.snake.head_pos)
+            .filter(|f| f.pos != next_pos)
             .cloned()
             .collect();
 
@@ -177,7 +176,6 @@ mod test {
                 body: vec![(1, 5), (2, 5), (3, 5)],
                 direction: Direction::Right,
                 alive: true,
-                i_body: 0,
                 grow: false,
             },
             food: vec![],
@@ -191,29 +189,25 @@ mod test {
 
         game.next();
         assert_eq!(game.snake.head_pos, (4, 5));
-        assert_eq!(game.snake.i_body, 1);
-        assert_eq!(game.snake.body, vec![(4, 5), (2, 5), (3, 5)]);
+        assert_eq!(game.snake.body, vec![(2, 5), (3, 5), (4, 5)]);
         assert_eq!(game.snake.grow, false);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (5, 5));
-        assert_eq!(game.snake.i_body, 2);
-        assert_eq!(game.snake.body, vec![(4, 5), (5, 5), (3, 5)]);
+        assert_eq!(game.snake.body, vec![(3, 5), (4, 5), (5, 5)]);
         assert_eq!(game.snake.grow, false);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (6, 5));
-        assert_eq!(game.snake.i_body, 0);
         assert_eq!(game.snake.body, vec![(4, 5), (5, 5), (6, 5)]);
         assert_eq!(game.snake.grow, false);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (7, 5));
-        assert_eq!(game.snake.i_body, 1);
-        assert_eq!(game.snake.body, vec![(7, 5), (5, 5), (6, 5)]);
+        assert_eq!(game.snake.body, vec![(5, 5), (6, 5), (7, 5)]);
         assert_eq!(game.snake.grow, false);
         assert_eq!(game.snake.alive, true);
     }
@@ -226,7 +220,6 @@ mod test {
                 body: vec![(3, 5)],
                 direction: Direction::Right,
                 alive: true,
-                i_body: 0,
                 grow: false,
             },
             food: vec![Food::new(5, 5)],
@@ -236,29 +229,36 @@ mod test {
         };
 
         game.next();
+        assert_eq!(game.snake.head_pos, (4, 5));
+        assert_eq!(game.snake.body, vec![(4, 5)]);
+        assert_eq!(game.snake.alive, true);
+
         game.next();
 
         assert_eq!(game.snake.head_pos, (5, 5));
-        assert_eq!(game.snake.i_body, 0);
-        assert_eq!(game.snake.body, vec![(5, 5)]);
+        assert_eq!(game.snake.body, vec![(4, 5), (5, 5)]);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (6, 5));
-        assert_eq!(game.snake.i_body, 0);
         assert_eq!(game.snake.body, vec![(5, 5), (6, 5)]);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (7, 5));
-        assert_eq!(game.snake.i_body, 1);
-        assert_eq!(game.snake.body, vec![(7, 5), (6, 5)]);
+        assert_eq!(game.snake.body, vec![(6, 5), (7, 5)]);
         assert_eq!(game.snake.alive, true);
 
         game.next();
         assert_eq!(game.snake.head_pos, (8, 5));
-        assert_eq!(game.snake.i_body, 0);
         assert_eq!(game.snake.body, vec![(7, 5), (8, 5)]);
+        assert_eq!(game.snake.alive, true);
+
+        game.food.push(Food::new(9, 5));
+
+        game.next();
+        assert_eq!(game.snake.head_pos, (9, 5));
+        assert_eq!(game.snake.body, vec![(7, 5), (8, 5), (9, 5)]);
         assert_eq!(game.snake.alive, true);
     }
 
@@ -270,7 +270,6 @@ mod test {
                 body: vec![(5, 5)],
                 direction: Direction::Right,
                 alive: true,
-                i_body: 0,
                 grow: false,
             },
             food: vec![],
@@ -294,7 +293,6 @@ mod test {
                 body: vec![(5, 5)],
                 direction: Direction::Right,
                 alive: true,
-                i_body: 0,
                 grow: false,
             },
             food: vec![],
@@ -343,7 +341,6 @@ mod test {
                 body: vec![(6, 5), (5, 4), (4, 4), (4, 5), (5, 5)],
                 direction: Direction::Right,
                 alive: true,
-                i_body: 0,
                 grow: false,
             },
             food: vec![],
