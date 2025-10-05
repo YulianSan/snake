@@ -1,7 +1,7 @@
 #![allow(warnings)]
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum Direction {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -31,11 +31,11 @@ impl Direction {
 }
 
 #[derive(Clone)]
-struct Snake {
-    body: Vec<(u32, u32)>,
-    direction: Direction,
-    head_pos: (u32, u32),
-    alive: bool,
+pub struct Snake {
+    pub body: Vec<(u16, u16)>,
+    pub direction: Direction,
+    pub head_pos: (u16, u16),
+    pub alive: bool,
     grow: bool,
 }
 
@@ -62,11 +62,11 @@ impl Snake {
         }
     }
 
-    pub fn next_pos(&self) -> (u32, u32) {
+    pub fn next_pos(&self) -> (u16, u16) {
         let (x, y) = self.direction.value();
 
-        let x = u32::try_from(x + self.head_pos.0 as i32).expect("overflow in x");
-        let y = u32::try_from(y + self.head_pos.1 as i32).expect("overflow in y");
+        let x = u16::try_from(x + self.head_pos.0 as i32).expect("overflow in x");
+        let y = u16::try_from(y + self.head_pos.1 as i32).expect("overflow in y");
 
         (x, y)
     }
@@ -90,18 +90,18 @@ impl Snake {
 
 #[derive(Clone, Copy)]
 struct Food {
-    pos: (u32, u32),
+    pos: (u16, u16),
 }
 
 impl Food {
-    pub fn new(x: u32, y: u32) -> Food {
+    pub fn new(x: u16, y: u16) -> Food {
         Food { pos: (x, y) }
     }
 }
 
 #[derive(Clone)]
 struct ConfigGame {
-    food_amount: u32,
+    food_amount: u16,
 }
 
 impl Default for ConfigGame {
@@ -112,14 +112,32 @@ impl Default for ConfigGame {
 
 #[derive(Clone)]
 pub struct Game {
-    snake: Snake,
+    pub snake: Snake,
     food: Vec<Food>,
     config: ConfigGame,
-    height: u32,
-    width: u32,
+    height: u16,
+    width: u16,
 }
 
 impl Game {
+    pub fn new(pos: (u16, u16), width: u16, height: u16) -> Game {
+        Game {
+            snake: Snake {
+                head_pos: pos,
+                body: vec![pos],
+                direction: Direction::Right,
+                alive: true,
+                grow: false,
+            },
+            food: vec![Food::new(8, 8)],
+            height,
+            width,
+            config: ConfigGame {
+                food_amount: 1,
+                ..Default::default()
+            },
+        }
+    }
     pub fn next(&mut self) -> bool {
         if (!self.snake.alive || !self.snake_inside() || self.snake.self_collision()) {
             self.snake.alive = false;
@@ -133,10 +151,9 @@ impl Game {
     }
 
     pub fn snake_inside(&self) -> bool {
-        self.snake.head_pos.0 < self.width
-            && self.snake.head_pos.1 < self.height
-            && self.snake.head_pos.0 > 0
-            && self.snake.head_pos.1 > 0
+        let next_pos = self.snake.next_pos();
+
+        next_pos.0 < self.width && next_pos.1 < self.height && next_pos.0 > 0 && next_pos.1 > 0
     }
 
     pub fn snake_collion_food(&mut self) {
@@ -150,7 +167,7 @@ impl Game {
             .cloned()
             .collect();
 
-        let food_amount_eat = (food_amount - self.food.len()) as u32;
+        let food_amount_eat = (food_amount - self.food.len()) as u16;
         for _ in 0..food_amount_eat {
             self.snake.eat();
         }
@@ -266,8 +283,8 @@ mod test {
     fn snake_should_die() {
         let mut game = Game {
             snake: Snake {
-                head_pos: (5, 5),
-                body: vec![(5, 5)],
+                head_pos: (4, 5),
+                body: vec![(4, 5)],
                 direction: Direction::Right,
                 alive: true,
                 grow: false,

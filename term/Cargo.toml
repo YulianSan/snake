@@ -1,0 +1,10 @@
+[package]
+name = "term"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+crossterm = { "version" = "0.29.0", features = ["event-stream"] }
+futures = "0.3"
+tokio.workspace = true
