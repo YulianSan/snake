@@ -1,5 +1,7 @@
 #![allow(warnings)]
 
+use rand::{rng, seq::IteratorRandom};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Direction {
     Up,
@@ -89,8 +91,8 @@ impl Snake {
 }
 
 #[derive(Clone, Copy)]
-struct Food {
-    pos: (u16, u16),
+pub struct Food {
+    pub pos: (u16, u16),
 }
 
 impl Food {
@@ -113,7 +115,7 @@ impl Default for ConfigGame {
 #[derive(Clone)]
 pub struct Game {
     pub snake: Snake,
-    food: Vec<Food>,
+    pub food: Vec<Food>,
     config: ConfigGame,
     height: u16,
     width: u16,
@@ -145,15 +147,45 @@ impl Game {
         }
 
         self.snake_collion_food();
+        self.generate_food();
         self.snake.walk();
 
         true
     }
 
-    pub fn snake_inside(&self) -> bool {
-        let next_pos = self.snake.next_pos();
+    pub fn generate_food(&mut self) {
+        let food_amount = (self.config.food_amount as usize)
+            .checked_sub(self.food.len())
+            .unwrap_or(0);
 
-        next_pos.0 < self.width && next_pos.1 < self.height && next_pos.0 > 0 && next_pos.1 > 0
+        if food_amount == 0 {
+            return;
+        }
+
+        let mut possible_positions = Vec::new();
+
+        for x in 0..self.width {
+            for y in 0..self.height {
+                possible_positions.push((x, y));
+            }
+        }
+
+        let pos = possible_positions
+            .iter()
+            .choose_multiple(&mut rand::thread_rng(), self.config.food_amount as usize);
+
+        for pos in pos {
+            self.food.push(Food::new(pos.0, pos.1));
+        }
+    }
+
+    pub fn snake_inside(&self) -> bool {
+        let next_pos = self.snake.head_pos;
+
+        next_pos.0 < self.width - 1
+            && next_pos.1 < self.height - 1
+            && next_pos.0 != 0
+            && next_pos.1 != 0
     }
 
     pub fn snake_collion_food(&mut self) {
@@ -242,7 +274,7 @@ mod test {
             food: vec![Food::new(5, 5)],
             height: 11,
             width: 11,
-            config: ConfigGame::default(),
+            config: ConfigGame { food_amount: 0 },
         };
 
         game.next();
@@ -372,5 +404,29 @@ mod test {
 
         game.next();
         assert!(!game.snake.alive);
+    }
+
+    #[test]
+    fn should_generate_new_food() {
+        let mut game = Game {
+            snake: Snake {
+                head_pos: (5, 5),
+                body: vec![(5, 5)],
+                direction: Direction::Right,
+                alive: true,
+                grow: false,
+            },
+            food: vec![Food::new(6, 5)],
+            height: 11,
+            width: 11,
+            config: ConfigGame { food_amount: 3 },
+        };
+
+        assert_eq!(game.food.len(), 1);
+        game.next();
+        assert_eq!(game.snake.head_pos, (6, 5));
+        assert_eq!(game.snake.body, vec![(5, 5), (6, 5)]);
+        assert_eq!(game.snake.alive, true);
+        assert_eq!(game.food.len(), 3);
     }
 }
