@@ -36,17 +36,19 @@ impl Direction {
 pub struct Snake {
     pub body: Vec<(u16, u16)>,
     pub direction: Direction,
+    pub next_direction: Direction,
     pub head_pos: (u16, u16),
     pub alive: bool,
     grow: bool,
 }
 
 impl Snake {
-    pub fn new() -> Snake {
+    pub fn new(pos: (u16, u16)) -> Snake {
         Snake {
-            body: vec![(0, 0)],
+            body: vec![(pos.0, pos.1)],
             direction: Direction::Right,
-            head_pos: (0, 0),
+            next_direction: Direction::Right,
+            head_pos: (pos.0, pos.1),
             alive: true,
             grow: false,
         }
@@ -141,6 +143,7 @@ impl Game {
         }
     }
     pub fn next(&mut self) -> bool {
+        self.snake.direction = self.snake.next_direction;
         if (!self.snake.alive || !self.snake_inside() || self.snake.self_collision()) {
             self.snake.alive = false;
             return false;
@@ -180,12 +183,9 @@ impl Game {
     }
 
     pub fn snake_inside(&self) -> bool {
-        let next_pos = self.snake.head_pos;
+        let next_pos = self.snake.next_pos();
 
-        next_pos.0 < self.width - 1
-            && next_pos.1 < self.height - 1
-            && next_pos.0 != 0
-            && next_pos.1 != 0
+        next_pos.0 < self.width && next_pos.1 < self.height && next_pos.0 != 0 && next_pos.1 != 0
     }
 
     pub fn snake_collion_food(&mut self) {
@@ -210,7 +210,7 @@ impl Game {
             return;
         }
 
-        self.snake.direction = direction
+        self.snake.next_direction = direction
     }
 }
 
@@ -224,6 +224,7 @@ mod test {
                 head_pos: (3, 5),
                 body: vec![(1, 5), (2, 5), (3, 5)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
@@ -268,6 +269,7 @@ mod test {
                 head_pos: (3, 5),
                 body: vec![(3, 5)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
@@ -315,16 +317,17 @@ mod test {
     fn snake_should_die() {
         let mut game = Game {
             snake: Snake {
-                head_pos: (4, 5),
-                body: vec![(4, 5)],
+                head_pos: (4, 3),
+                body: vec![(4, 3)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
             food: vec![],
             height: 6,
             width: 6,
-            config: ConfigGame::default(),
+            config: ConfigGame { food_amount: 0 },
         };
 
         game.next();
@@ -341,6 +344,7 @@ mod test {
                 head_pos: (5, 5),
                 body: vec![(5, 5)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
@@ -389,6 +393,7 @@ mod test {
                 head_pos: (5, 5),
                 body: vec![(6, 5), (5, 4), (4, 4), (4, 5), (5, 5)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
@@ -413,6 +418,7 @@ mod test {
                 head_pos: (5, 5),
                 body: vec![(5, 5)],
                 direction: Direction::Right,
+                next_direction: Direction::Right,
                 alive: true,
                 grow: false,
             },
