@@ -1,6 +1,6 @@
 #![allow(warnings)]
 
-use core;
+use core::{self, Food};
 use crossterm::{
     self,
     cursor::{DisableBlinking, Hide, MoveTo, SetCursorStyle, Show},
@@ -38,8 +38,6 @@ impl DrawGame {
             },
         ];
 
-        // execute!(stdout(), Clear(ClearType::Purge)).unwrap();
-
         for i in 0..SIZE_GAME {
             for j in 0..SIZE_GAME {
                 for k in 0..PERFECT_SQUARE[1] {
@@ -69,6 +67,24 @@ impl DrawGame {
                         pos.1 * PERFECT_SQUARE[1] + i
                     ),
                     SetBackgroundColor(Color::Blue),
+                    Print(str::repeat(" ", PERFECT_SQUARE[0] as usize)),
+                    ResetColor
+                )
+                .unwrap();
+            }
+        }
+    }
+
+    fn draw_food(&self) {
+        for Food { pos } in self.game.food.iter() {
+            for i in 0..PERFECT_SQUARE[1] {
+                execute!(
+                    stdout(),
+                    MoveTo(
+                        pos.0 * PERFECT_SQUARE[0] + PERFECT_SQUARE[0],
+                        pos.1 * PERFECT_SQUARE[1] + i
+                    ),
+                    SetBackgroundColor(Color::DarkRed),
                     Print(str::repeat(" ", PERFECT_SQUARE[0] as usize)),
                     ResetColor
                 )
@@ -157,6 +173,7 @@ async fn main() {
         draw.draw_background();
         draw.draw_snake();
         draw.game.next();
+        draw.draw_food();
         sleep(Duration::from_millis(200)).await;
     }
 
