@@ -126,13 +126,7 @@ pub struct Game {
 impl Game {
     pub fn new(pos: (u16, u16), width: u16, height: u16) -> Game {
         Game {
-            snake: Snake {
-                head_pos: pos,
-                body: vec![pos],
-                direction: Direction::Right,
-                alive: true,
-                grow: false,
-            },
+            snake: Snake::new(pos),
             food: vec![Food::new(8, 8)],
             height,
             width,
