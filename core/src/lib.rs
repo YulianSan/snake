@@ -55,7 +55,7 @@ impl Snake {
     }
 
     pub fn walk(&mut self) {
-        self.head_pos = self.next_pos();
+        self.head_pos = self.next_pos().unwrap();
 
         if self.grow {
             self.grow = false;
@@ -66,13 +66,32 @@ impl Snake {
         }
     }
 
-    pub fn next_pos(&self) -> (u16, u16) {
-        let (x, y) = self.direction.value();
+    pub fn next_pos(&self) -> Result<(u16, u16), &'static str> {
+        let (x, y) = self.next_direction.value();
 
-        let x = u16::try_from(x + self.head_pos.0 as i32).expect("overflow in x");
-        let y = u16::try_from(y + self.head_pos.1 as i32).expect("overflow in y");
+        let y = y + self.head_pos.1 as i32;
+        let y = u16::try_from(y).map_err(|_| {
+            if y < 0 {
+                "value is negative"
+            } else if y > u16::MAX as i32 {
+                "value too large"
+            } else {
+                "overflow in y"
+            }
+        })?;
 
-        (x, y)
+        let x = x + self.head_pos.0 as i32;
+        let x = u16::try_from(x).map_err(|_| {
+            if x < 0 {
+                "value is negative"
+            } else if x > u16::MAX as i32 {
+                "value too large"
+            } else {
+                "overflow in x"
+            }
+        })?;
+
+        Ok((x, y))
     }
 
     pub fn eat(&mut self) {
@@ -80,7 +99,7 @@ impl Snake {
     }
 
     pub fn self_collision(&self) -> bool {
-        let next_pos = self.next_pos();
+        let next_pos = self.next_pos().unwrap();
 
         for i in 1..self.body.len() {
             if next_pos == self.body[i] {
@@ -185,14 +204,17 @@ impl Game {
     }
 
     pub fn snake_inside(&self) -> bool {
-        let next_pos = self.snake.next_pos();
+        let next_pos = match self.snake.next_pos() {
+            Ok(pos) => pos,
+            Err(_) => return false,
+        };
 
-        next_pos.0 < self.width && next_pos.1 < self.height && next_pos.0 != 0 && next_pos.1 != 0
+        next_pos.0 < self.width && next_pos.1 < self.height
     }
 
     pub fn snake_collion_food(&mut self) {
         let food_amount = self.food.len();
-        let next_pos = self.snake.next_pos();
+        let next_pos = self.snake.next_pos().unwrap();
 
         self.food = self
             .food
@@ -222,6 +244,7 @@ mod test {
     #[test]
     fn snake_should_walk() {
         let mut game = Game {
+            initial_pos: (3, 5),
             snake: Snake {
                 head_pos: (3, 5),
                 body: vec![(1, 5), (2, 5), (3, 5)],
@@ -267,6 +290,7 @@ mod test {
     #[test]
     fn snake_should_eat() {
         let mut game = Game {
+            initial_pos: (3, 5),
             snake: Snake {
                 head_pos: (3, 5),
                 body: vec![(3, 5)],
@@ -318,6 +342,7 @@ mod test {
     #[test]
     fn snake_should_die() {
         let mut game = Game {
+            initial_pos: (4, 3),
             snake: Snake {
                 head_pos: (4, 3),
                 body: vec![(4, 3)],
@@ -342,6 +367,7 @@ mod test {
     #[test]
     fn snake_should_change_direction() {
         let mut game = Game {
+            initial_pos: (5, 5),
             snake: Snake {
                 head_pos: (5, 5),
                 body: vec![(5, 5)],
@@ -396,6 +422,7 @@ mod test {
     #[test]
     fn snake_should_self_collision() {
         let mut game = Game {
+            initial_pos: (5, 5),
             snake: Snake {
                 head_pos: (5, 5),
                 body: vec![(6, 5), (5, 4), (4, 4), (4, 5), (5, 5)],
@@ -421,6 +448,7 @@ mod test {
     #[test]
     fn should_generate_new_food() {
         let mut game = Game {
+            initial_pos: (5, 5),
             snake: Snake {
                 head_pos: (5, 5),
                 body: vec![(5, 5)],
