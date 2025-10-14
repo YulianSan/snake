@@ -358,30 +358,35 @@ mod test {
 
         game.input(Direction::Left);
         assert_eq!(game.snake.direction, Direction::Right);
+        assert_eq!(game.snake.next_direction, Direction::Right);
 
         game.input(Direction::Up);
-        assert_eq!(game.snake.direction, Direction::Up);
+        assert_eq!(game.snake.next_direction, Direction::Up);
+        assert_eq!(game.snake.direction, Direction::Right);
         game.next();
         assert_eq!(game.snake.direction, Direction::Up);
         assert_eq!(game.snake.head_pos, (5, 4));
         assert!(game.snake.alive);
 
         game.input(Direction::Left);
-        assert_eq!(game.snake.direction, Direction::Left);
+        assert_eq!(game.snake.next_direction, Direction::Left);
+        assert_eq!(game.snake.direction, Direction::Up);
         game.next();
         assert_eq!(game.snake.direction, Direction::Left);
         assert_eq!(game.snake.head_pos, (4, 4));
         assert!(game.snake.alive);
 
         game.input(Direction::Down);
-        assert_eq!(game.snake.direction, Direction::Down);
+        assert_eq!(game.snake.next_direction, Direction::Down);
+        assert_eq!(game.snake.direction, Direction::Left);
         game.next();
         assert_eq!(game.snake.direction, Direction::Down);
         assert_eq!(game.snake.head_pos, (4, 5));
         assert!(game.snake.alive);
 
         game.input(Direction::Right);
-        assert_eq!(game.snake.direction, Direction::Right);
+        assert_eq!(game.snake.next_direction, Direction::Right);
+        assert_eq!(game.snake.direction, Direction::Down);
         game.next();
         assert_eq!(game.snake.direction, Direction::Right);
         assert_eq!(game.snake.head_pos, (5, 5));
