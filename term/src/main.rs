@@ -23,6 +23,11 @@ use tokio::{
 const SIZE_GAME: u16 = 20;
 const PERFECT_SQUARE: [u16; 2] = [5, 2];
 
+enum Events {
+    Input(core::Direction),
+    Reset,
+}
+
 struct DrawGame {
     game: core::Game,
 }
@@ -93,38 +98,6 @@ impl DrawGame {
         }
     }
 
-    async fn get_input(&mut self) {
-        let mut reader = EventStream::new();
-
-        loop {
-            let mut event = reader.next().fuse().await;
-
-            match event {
-                Some(Ok(Event::Key(event))) => match event.code {
-                    KeyCode::Char('q') => {
-                        disable_raw_mode();
-                        execute!(stdout(), Show, ResetColor).unwrap();
-                        std::process::exit(0);
-                    }
-                    KeyCode::Up | KeyCode::Char('w') => {
-                        self.game.input(core::Direction::Up);
-                    }
-                    KeyCode::Down | KeyCode::Char('s') => {
-                        self.game.input(core::Direction::Down);
-                    }
-                    KeyCode::Left | KeyCode::Char('a') => {
-                        self.game.input(core::Direction::Left);
-                    }
-                    KeyCode::Right | KeyCode::Char('d') => {
-                        self.game.input(core::Direction::Right);
-                    }
-                    e => println!("{:?}", e),
-                },
-                _ => (),
-            }
-        }
-    }
-
     fn render(&mut self) {}
 }
 
@@ -150,10 +123,17 @@ async fn main() {
                         execute!(stdout(), Show, ResetColor).unwrap();
                         std::process::exit(0);
                     }
-                    KeyCode::Up | KeyCode::Char('w') => Some(core::Direction::Up),
-                    KeyCode::Down | KeyCode::Char('s') => Some(core::Direction::Down),
-                    KeyCode::Left | KeyCode::Char('a') => Some(core::Direction::Left),
-                    KeyCode::Right | KeyCode::Char('d') => Some(core::Direction::Right),
+                    KeyCode::Up | KeyCode::Char('w') => Some(Events::Input(core::Direction::Up)),
+                    KeyCode::Down | KeyCode::Char('s') => {
+                        Some(Events::Input(core::Direction::Down))
+                    }
+                    KeyCode::Left | KeyCode::Char('a') => {
+                        Some(Events::Input(core::Direction::Left))
+                    }
+                    KeyCode::Right | KeyCode::Char('d') => {
+                        Some(Events::Input(core::Direction::Right))
+                    }
+                    KeyCode::Char('r') => Some(Events::Reset),
                     e => None,
                 },
                 _ => None,
@@ -166,8 +146,11 @@ async fn main() {
     });
 
     loop {
-        while let Ok(input) = rx.try_recv() {
-            draw.game.input(input);
+        while let Ok(event) = rx.try_recv() {
+            match event {
+                Events::Input(input) => draw.game.input(input),
+                Events::Reset => draw.game.reset()
+            }
         }
 
         draw.draw_background();

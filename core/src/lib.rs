@@ -118,6 +118,7 @@ impl Default for ConfigGame {
 pub struct Game {
     pub snake: Snake,
     pub food: Vec<Food>,
+    initial_pos: (u16, u16),
     config: ConfigGame,
     height: u16,
     width: u16,
@@ -127,7 +128,8 @@ impl Game {
     pub fn new(pos: (u16, u16), width: u16, height: u16) -> Game {
         Game {
             snake: Snake::new(pos),
-            food: vec![Food::new(8, 8)],
+            initial_pos: pos,
+            food: vec![],
             height,
             width,
             config: ConfigGame {
@@ -136,6 +138,12 @@ impl Game {
             },
         }
     }
+
+    pub fn reset(&mut self) {
+        self.snake = Snake::new(self.initial_pos);
+        self.food = vec![];
+    }
+
     pub fn next(&mut self) -> bool {
         self.snake.direction = self.snake.next_direction;
         if (!self.snake.alive || !self.snake_inside() || self.snake.self_collision()) {
