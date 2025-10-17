@@ -1,0 +1,9 @@
+[package]
+name = "files"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+image = "0.25.8"
+tokio.workspace = true
