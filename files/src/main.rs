@@ -1,6 +1,6 @@
 #![allow(warnings)]
 
-use core::{self};
+use core::{self, Direction};
 use std::{
     fs::{create_dir_all, exists, remove_dir_all},
     io,
@@ -8,13 +8,18 @@ use std::{
 };
 
 use image::ImageBuffer;
-use tokio::time::sleep;
+use rdev::{
+    listen, Event,
+    EventType::KeyPress,
+    Key::{self, DownArrow, LeftArrow, RightArrow, UpArrow},
+};
+use tokio::{sync::mpsc, time::sleep};
 
 const BACKGROUND_COLOR: [[u8; 3]; 2] = [[0u8, 255u8, 0u8], [136, 255, 136]];
 const SNAKE_COLOR: [u8; 3] = [0u8, 0u8, 255u8];
 const FOOD_COLOR: [u8; 3] = [255u8, 0u8, 0u8];
-const WIDTH: usize = 13;
-const HEIGHT: usize = 8;
+const WIDTH: usize = 9;
+const HEIGHT: usize = 6;
 const IMAGE_SIZE: u32 = 100;
 const PATH: &str = "/home/sandev/game_snake";
 
@@ -60,16 +65,43 @@ impl DrawGame {
             .save(format!("{}/{}.png", PATH, pos.0 + (pos.1 * WIDTH as u16)))
             .unwrap();
     }
+
+    fn listener(&self, event: Event) {}
 }
 
 #[tokio::main]
 async fn main() {
+    let (tx, mut rx) = mpsc::unbounded_channel();
     let mut draw = DrawGame::new();
 
+    tokio::spawn(async move {
+        if let Err(e) = listen(move |event| match event.event_type {
+            KeyPress(key) => {
+                tx.send(key);
+            }
+            _ => (),
+        }) {
+            println!("Error: {:?}", e);
+        }
+    });
+
     loop {
+        while let Ok(event) = rx.try_recv() {
+            match event {
+                DownArrow => draw.game.input(Direction::Down),
+                UpArrow => draw.game.input(Direction::Up),
+                LeftArrow => draw.game.input(Direction::Left),
+                RightArrow => draw.game.input(Direction::Right),
+                Key::KeyR => draw.game.reset(),
+                Key::KeyQ => std::process::exit(0),
+                _ => (),
+            }
+        }
+
+        draw.game.next();
+
         draw.draw_background();
         draw.draw_snake();
-        draw.game.next();
         draw.draw_food();
 
         sleep(Duration::from_millis(5000)).await;

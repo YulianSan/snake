@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 core = { path = "../core" }
 image = "0.25.8"
+rdev = "0.5.3"
 tokio.workspace = true
