@@ -13,7 +13,7 @@ use rdev::{
     EventType::KeyPress,
     Key::{self, DownArrow, LeftArrow, RightArrow, UpArrow},
 };
-use tokio::{sync::mpsc, time::sleep};
+use tokio::{fs::rename, sync::mpsc, time::sleep};
 
 const BACKGROUND_COLOR: [[u8; 3]; 2] = [[0u8, 255u8, 0u8], [136, 255, 136]];
 const SNAKE_COLOR: [u8; 3] = [0u8, 0u8, 255u8];
@@ -25,6 +25,7 @@ const PATH: &str = "/home/sandev/game_snake";
 
 struct DrawGame {
     pub game: core::Game,
+    old_pos: (u16, u16),
 }
 
 impl DrawGame {
@@ -37,6 +38,7 @@ impl DrawGame {
 
         DrawGame {
             game: core::Game::new((3, 3), WIDTH as u16, HEIGHT as u16),
+            old_pos: (3, 3),
         }
     }
 
@@ -66,7 +68,19 @@ impl DrawGame {
             .unwrap();
     }
 
-    fn listener(&self, event: Event) {}
+    fn before_next(&mut self) {
+        self.old_pos = self.game.snake.body[0];
+    }
+
+    fn after_next(&mut self) {
+        let new_pos = self.game.snake.body.last().unwrap();
+
+        DrawGame::create_image(SNAKE_COLOR, *new_pos);
+        DrawGame::create_image(
+            BACKGROUND_COLOR[(self.old_pos.0 + self.old_pos.1) as usize % 2],
+            self.old_pos,
+        );
+    }
 }
 
 #[tokio::main]
@@ -85,6 +99,9 @@ async fn main() {
         }
     });
 
+    draw.draw_background();
+    draw.draw_snake();
+
     loop {
         while let Ok(event) = rx.try_recv() {
             match event {
@@ -97,11 +114,10 @@ async fn main() {
                 _ => (),
             }
         }
-
+        draw.before_next();
         draw.game.next();
 
-        draw.draw_background();
-        draw.draw_snake();
+        draw.after_next();
         draw.draw_food();
 
         sleep(Duration::from_millis(5000)).await;
